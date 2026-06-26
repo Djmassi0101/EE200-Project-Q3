@@ -30,7 +30,7 @@ import os
 import pickle
 from collections import defaultdict
 from tqdm import tqdm
-
+from config import SUPPORTED_EXTENSIONS
 from fingerprint import generate_fingerprints
 
 
@@ -81,9 +81,7 @@ class FingerprintDatabase:
 
             for file in files
 
-            if file.lower().endswith(
-                (".wav", ".mp3", ".flac")
-            )
+            if file.lower().endswith(SUPPORTED_EXTENSIONS):
 
         ]
 
