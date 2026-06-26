@@ -17,3 +17,16 @@ This module is responsible for:
 Every other module in the project (database, matcher,
 experiments, Streamlit app) should use this module
 instead of implementing their own fingerprinting logic.
+
+*app.py*
+======
+
+Streamlit application for the Audio Fingerprinting project.
+
+Features
+--------
+1. Upload an MP3 file
+2. Identify the song
+3. Display confidence score
+4. Show top matches
+5. Plot offset histogram
