@@ -1,7 +1,7 @@
 # EE200-Project-Q3
 
-"""
-fingerprint.py
+
+*fingerprint.py*
 ==============
 
 Core audio fingerprint generation module.
@@ -17,4 +17,3 @@ This module is responsible for:
 Every other module in the project (database, matcher,
 experiments, Streamlit app) should use this module
 instead of implementing their own fingerprinting logic.
-"""
