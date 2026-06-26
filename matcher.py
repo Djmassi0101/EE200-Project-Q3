@@ -1,20 +1,3 @@
-"""
-matcher.py
-==========
-
-Song recognition module.
-
-Responsibilities
-----------------
-1. Load fingerprint database.
-2. Fingerprint a query song.
-3. Compare fingerprints with the database.
-4. Compute offset histogram.
-5. Return the best matching song.
-
-Author: <Your Name>
-"""
-
 from collections import Counter, defaultdict
 
 from fingerprint import generate_fingerprints
