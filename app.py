@@ -24,13 +24,14 @@ st.divider()
 @st.cache_resource
 def load_cached_matcher():
     matcher = SongMatcher()
-    matcher.load_database("data/fingerprints.pkl")
+    # Updated to load the clean database file containing the fixed native integers
+    matcher.load_database("data/fresh_fingerprints.pkl")
     return matcher
 
 try:
     matcher = load_cached_matcher()
 except Exception as e:
-    st.error("Could not find database pickle file at 'data/fingerprints.pkl'. Please ensure it runs within your root folder workspace context.")
+    st.error("Could not find database pickle file at 'data/fresh_fingerprints.pkl'. Please ensure it runs within your root folder workspace context.")
     st.stop()
 
 # Mode Toggles
@@ -47,15 +48,20 @@ if mode == "Single-Clip Mode":
         st.success("Audio data successfully staged.")
         
         if st.button("Execute Identification Process", type="primary"):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as temp:
+            # Determine suffix cleanly based on file name extension
+            file_suffix = f".{uploaded_file.name.split('.')[-1]}"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix) as temp:
                 temp.write(uploaded_file.read())
                 temp_path = temp.name
 
             try:
                 with st.spinner("Extracting parameters and running DSP pipeline..."):
-                    # Extract footprints with full debug context arrays for visualization
+                    # CRITICAL FIX: Pass the temporary file path directly to the matcher.
+                    # This ensures both query and database share the exact same sample rate downsampling.
+                    result = matcher.identify(query_path=temp_path)
+                    
+                    # Run debug feature extraction standalone solely to generate pristine UI plots
                     fingerprints, debug = generate_fingerprints(audio_path=temp_path, return_debug=True)
-                    result = matcher.identify(audio=debug["audio"], sample_rate=debug["sample_rate"])
                 
                 st.success("Processing Complete!")
                 st.divider()
@@ -111,6 +117,7 @@ if mode == "Single-Clip Mode":
                         st.warning("No offset mapping histogram available for display.")
 
             finally:
+                # Continuous file system cleaning guard
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
@@ -135,11 +142,13 @@ else:
             progress_bar = st.progress(0)
             
             for index, uploaded_file in enumerate(uploaded_files):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as temp:
+                file_suffix = f".{uploaded_file.name.split('.')[-1]}"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix) as temp:
                     temp.write(uploaded_file.read())
                     temp_path = temp.name
 
                 try:
+                    # CRITICAL FIX: Pass query_path directly for uniform pipeline execution
                     result = matcher.identify(query_path=temp_path)
                     prediction_output = result["song"] if result["song"] is not None else "Unknown"
                     

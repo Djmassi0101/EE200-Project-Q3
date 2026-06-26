@@ -4,15 +4,21 @@ import numpy as np
 import scipy.ndimage as ndi
 from scipy import signal
 
-# Hardcoded configuration mirroring standard Shazam parameters
-NPERSEG = 4096
-NOVERLAP = 2048
-NEIGHBORHOOD_SIZE = (25, 25)  # Frequency cells by Time cells
-PEAK_THRESHOLD_DB = 20
-FAN_OUT = 3
+# ============================================================
+# CONFIGURATION CONSTANTS
+# ============================================================
+
+NPERSEG = 2048
+NOVERLAP = 1024
+NEIGHBORHOOD_SIZE = (45, 45)
+PEAK_THRESHOLD_DB = 25
+FAN_OUT = 5
 MIN_TIME_DELTA = 0
-MAX_TIME_DELTA = 200
-MAX_DISPLAY_FREQ = 5000  # For visualization clamping
+MAX_TIME_DELTA = 500
+
+# ============================================================
+# DSP PIPELINE FUNCTIONS
+# ============================================================
 
 def load_audio(audio_path, target_sr=11025):
     """Loads audio and standardizes sampling frequency to optimize DSP performance."""
@@ -39,7 +45,10 @@ def detect_peaks(spectrogram_db):
     return frequency_indices, time_indices
 
 def create_constellation(time_indices, frequency_indices):
-    """Groups coordinate indices into a time-sorted structural constellation."""
+    """
+    Groups coordinate indices into a time-sorted structural constellation.
+    CRITICAL FIX: Explicitly pairs time first to ensure proper sorting and offset unpacking.
+    """
     return sorted(zip(time_indices, frequency_indices))
 
 def generate_hashes(peaks):
@@ -61,6 +70,10 @@ def generate_hashes(peaks):
                 fingerprints.append((fingerprint_hash, anchor_time))
     return fingerprints
 
+# ============================================================
+# MAIN INGESTION ENTRYPOINT
+# ============================================================
+
 def generate_fingerprints(audio_path=None, audio=None, sample_rate=None, return_debug=False):
     """Main ingestion wrapper supporting file paths or raw arrays."""
     if audio is None:
@@ -73,6 +86,8 @@ def generate_fingerprints(audio_path=None, audio=None, sample_rate=None, return_
 
     frequencies, times, spectrogram_db = compute_spectrogram(audio, sample_rate)
     frequency_indices, time_indices = detect_peaks(spectrogram_db)
+    
+    # CRITICAL ARGUMENT ORDER CHECK
     peaks = create_constellation(time_indices, frequency_indices)
     fingerprints = generate_hashes(peaks)
 
