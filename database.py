@@ -1,31 +1,3 @@
-"""
-database.py
-===========
-
-Manages the audio fingerprint database.
-
-Responsibilities
-----------------
-1. Build fingerprint database from a folder of songs.
-2. Save the database to disk.
-3. Load an existing database.
-4. Provide lookup functions for the matcher.
-5. Display useful statistics.
-
-Database Structure
-------------------
-
-{
-    fingerprint_hash : [
-        (song_name, offset),
-        (song_name, offset),
-        ...
-    ]
-}
-
-Author: <Your Name>
-"""
-
 import os
 import pickle
 from collections import defaultdict
