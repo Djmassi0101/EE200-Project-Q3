@@ -1,21 +1,3 @@
-"""
-experiments.py
-==============
-
-Runs robustness experiments on the audio fingerprinting system.
-
-Experiments Performed
----------------------
-1. Original audio
-2. Additive Gaussian Noise
-3. Pitch Shift
-4. Time Stretch
-
-Results are saved as a CSV file for use in the project report.
-
-Author: <Your Name>
-"""
-
 import os
 
 import librosa
