@@ -71,3 +71,17 @@ Experiments Performed
 4. Time Stretch
 
 Results are saved as a CSV file for use in the project report.
+
+
+*matcher.py*
+==========
+
+Song recognition module.
+
+Responsibilities
+----------------
+1. Load fingerprint database.
+2. Fingerprint a query song.
+3. Compare fingerprints with the database.
+4. Compute offset histogram.
+5. Return the best matching song.
