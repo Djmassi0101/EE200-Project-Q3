@@ -2,9 +2,18 @@
 database.py
 ===========
 
-Creates, loads, saves, and manages the audio fingerprint database.
+Manages the audio fingerprint database.
 
-The database structure is:
+Responsibilities
+----------------
+1. Build fingerprint database from a folder of songs.
+2. Save the database to disk.
+3. Load an existing database.
+4. Provide lookup functions for the matcher.
+5. Display useful statistics.
+
+Database Structure
+------------------
 
 {
     fingerprint_hash : [
@@ -20,13 +29,14 @@ Author: <Your Name>
 import os
 import pickle
 from collections import defaultdict
+from tqdm import tqdm
 
 from fingerprint import generate_fingerprints
 
 
 class FingerprintDatabase:
     """
-    Audio fingerprint database manager.
+    Audio Fingerprint Database.
     """
 
     def __init__(self):
@@ -37,7 +47,6 @@ class FingerprintDatabase:
         self.database = defaultdict(list)
 
         self.song_count = 0
-
         self.total_fingerprints = 0
 
     # ==========================================================
@@ -46,39 +55,53 @@ class FingerprintDatabase:
 
     def build(self, song_directory):
         """
-        Build a fingerprint database from every supported audio
-        file inside a directory.
+        Build a fingerprint database from every song in a folder.
 
         Parameters
         ----------
         song_directory : str
-            Folder containing the songs.
+            Folder containing the audio files.
         """
+
+        if not os.path.exists(song_directory):
+            raise FileNotFoundError(
+                f"Folder not found:\n{song_directory}"
+            )
 
         self.database.clear()
 
         self.song_count = 0
-
         self.total_fingerprints = 0
 
         files = sorted(os.listdir(song_directory))
 
+        audio_files = [
+
+            file
+
+            for file in files
+
+            if file.lower().endswith(
+                (".wav", ".mp3", ".flac")
+            )
+
+        ]
+
         print("\nBuilding fingerprint database...\n")
 
-        for file in files:
+        for file in tqdm(audio_files,
+                         desc="Fingerprinting Songs"):
 
-            if not file.lower().endswith(
-                (".wav", ".mp3", ".flac")
-            ):
-                continue
-
-            song_path = os.path.join(song_directory, file)
+            song_path = os.path.join(
+                song_directory,
+                file
+            )
 
             song_name = os.path.splitext(file)[0]
 
-            print(f"Processing: {song_name}")
-
-            fingerprints = generate_fingerprints(song_path)
+            fingerprints = generate_fingerprints(
+                audio_path=song_path
+            )
 
             self.song_count += 1
 
@@ -87,54 +110,92 @@ class FingerprintDatabase:
             for fingerprint_hash, offset in fingerprints:
 
                 self.database[fingerprint_hash].append(
+
                     (song_name, offset)
+
                 )
 
-            print(
-                f"   {len(fingerprints)} fingerprints generated."
-            )
-
-        print("\nDatabase build complete.\n")
+        print("\nDatabase successfully built.\n")
 
     # ==========================================================
     # Save Database
     # ==========================================================
 
-    def save(self, output_path):
+    def save(self, output_file):
         """
-        Save the fingerprint database.
+        Save database to disk.
 
         Parameters
         ----------
-        output_path : str
+        output_file : str
         """
 
-        with open(output_path, "wb") as file:
+        with open(output_file, "wb") as file:
 
-            pickle.dump(dict(self.database), file)
+            pickle.dump(
+                dict(self.database),
+                file,
+                protocol=pickle.HIGHEST_PROTOCOL
+            )
 
-        print(f"Database saved to:\n{output_path}")
+        print(f"\nDatabase saved to:\n{output_file}")
 
     # ==========================================================
     # Load Database
     # ==========================================================
 
-    def load(self, input_path):
+    def load(self, input_file):
         """
-        Load a previously generated database.
+        Load database from disk.
 
         Parameters
         ----------
-        input_path : str
+        input_file : str
         """
 
-        with open(input_path, "rb") as file:
+        if not os.path.exists(input_file):
 
-            loaded = pickle.load(file)
+            raise FileNotFoundError(
+                f"Database not found:\n{input_file}"
+            )
 
-        self.database = defaultdict(list, loaded)
+        with open(input_file, "rb") as file:
 
-        print(f"Database loaded from:\n{input_path}")
+            loaded_database = pickle.load(file)
+
+        self.database = defaultdict(
+            list,
+            loaded_database
+        )
+
+        print(f"\nDatabase loaded from:\n{input_file}")
+
+    # ==========================================================
+    # Search
+    # ==========================================================
+
+    def search(self, fingerprint_hash):
+        """
+        Search for a fingerprint.
+
+        Parameters
+        ----------
+        fingerprint_hash : str
+
+        Returns
+        -------
+        list
+
+        [
+            (song_name, offset),
+            ...
+        ]
+        """
+
+        return self.database.get(
+            fingerprint_hash,
+            []
+        )
 
     # ==========================================================
     # Statistics
@@ -142,30 +203,41 @@ class FingerprintDatabase:
 
     def statistics(self):
         """
-        Display database statistics.
+        Print database statistics.
         """
 
-        unique_hashes = len(self.database)
-
-        print("\n========== Database Statistics ==========")
+        print("\n========== DATABASE ==========")
 
         print(f"Songs Processed      : {self.song_count}")
 
         print(
-            f"Total Fingerprints   : {self.total_fingerprints}"
+            f"Total Fingerprints   : "
+            f"{self.total_fingerprints}"
         )
 
-        print(f"Unique Hashes        : {unique_hashes}")
+        print(
+            f"Unique Hashes        : "
+            f"{len(self.database)}"
+        )
 
-        print("=========================================\n")
+        print("==============================\n")
 
     # ==========================================================
-    # Database Size
+    # Number of Unique Hashes
     # ==========================================================
 
     def __len__(self):
-        """
-        Number of unique hashes.
-        """
 
         return len(self.database)
+
+    # ==========================================================
+    # String Representation
+    # ==========================================================
+
+    def __repr__(self):
+
+        return (
+            f"FingerprintDatabase("
+            f"songs={self.song_count}, "
+            f"hashes={len(self.database)})"
+        )
