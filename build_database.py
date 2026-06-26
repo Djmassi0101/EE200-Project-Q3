@@ -1,14 +1,3 @@
-"""
-build_database.py
-=================
-
-Build the fingerprint database.
-
-Run:
-
-python build_database.py
-"""
-
 from database import FingerprintDatabase
 
 
