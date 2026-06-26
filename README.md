@@ -85,3 +85,18 @@ Responsibilities
 3. Compare fingerprints with the database.
 4. Compute offset histogram.
 5. Return the best matching song.
+
+
+
+*recognize.py*
+============
+
+Command-line interface for recognizing a song.
+
+Usage
+-----
+python recognize.py
+
+The script loads the fingerprint database, asks the user
+for a query MP3 file, performs recognition, and displays
+the result.
