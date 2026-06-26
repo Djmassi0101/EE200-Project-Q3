@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
 
 from fingerprint import generate_fingerprints
 from database import FingerprintDatabase
@@ -20,7 +21,6 @@ class SongMatcher:
         database : FingerprintDatabase
             Optional database object.
         """
-
         if database is None:
             self.database = FingerprintDatabase()
         else:
@@ -34,19 +34,13 @@ class SongMatcher:
         """
         Load fingerprints.pkl
         """
-
         self.database.load(database_path)
 
     # ==========================================================
     # Identify Song
     # ==========================================================
 
-    def identify(
-    self,
-    query_path=None,
-    audio=None,
-    sample_rate=None
-):
+    def identify(self, query_path=None, audio=None, sample_rate=None):
         """
         Identify a query song.
 
@@ -56,41 +50,30 @@ class SongMatcher:
 
         Returns
         -------
-        Dictionary containing
-
-        song
-        votes
-        confidence
-        histogram
-        top_matches
+        Dictionary containing:
+        song, votes, confidence, histogram, top_matches
         """
+        print("\nGenerating query fingerprints...")
 
-       print("\nGenerating query fingerprints...")
+        query_fingerprints = generate_fingerprints(
+            audio_path=query_path,
+            audio=audio,
+            sample_rate=sample_rate
+        )
 
-query_fingerprints = generate_fingerprints(
-    audio_path=query_path,
-    audio=audio,
-    sample_rate=sample_rate
-)
-
-print(f"{len(query_fingerprints)} fingerprints generated.\n")
+        print(f"{len(query_fingerprints)} fingerprints generated.\n")
+        
         # ------------------------------------------------------
         # Store votes for every song
         # ------------------------------------------------------
-
         song_histograms = defaultdict(Counter)
-
         matched_hashes = 0
 
         # ------------------------------------------------------
         # Compare every query fingerprint with database
         # ------------------------------------------------------
-
         for fingerprint_hash, query_offset in query_fingerprints:
-
-            matches = self.database.search(
-                fingerprint_hash
-            )
+            matches = self.database.search(fingerprint_hash)
 
             if not matches:
                 continue
@@ -98,111 +81,68 @@ print(f"{len(query_fingerprints)} fingerprints generated.\n")
             matched_hashes += 1
 
             for song_name, database_offset in matches:
-
                 delta = database_offset - query_offset
-
                 song_histograms[song_name][delta] += 1
 
         # ------------------------------------------------------
         # No matches
         # ------------------------------------------------------
-
         if len(song_histograms) == 0:
-
             return {
-
                 "song": None,
-
                 "votes": 0,
-
                 "confidence": 0,
-
                 "matched_hashes": 0,
-
                 "query_hashes": len(query_fingerprints),
-
                 "histogram": Counter(),
-
                 "top_matches": []
-
             }
 
         # ------------------------------------------------------
         # Determine best song
         # ------------------------------------------------------
-
         best_song = None
-
         best_votes = 0
-
         best_histogram = None
-
         ranking = []
 
         for song_name, histogram in song_histograms.items():
-
             peak_votes = max(histogram.values())
-
-            ranking.append(
-                (song_name, peak_votes)
-            )
+            ranking.append((song_name, peak_votes))
 
             if peak_votes > best_votes:
-
                 best_votes = peak_votes
-
                 best_song = song_name
-
                 best_histogram = histogram
 
         # ------------------------------------------------------
         # Sort ranking
         # ------------------------------------------------------
-
-        ranking.sort(
-            key=lambda x: x[1],
-            reverse=True
-        )
-
+        ranking.sort(key=lambda x: x[1], reverse=True)
         top_matches = ranking[:5]
 
         # ------------------------------------------------------
         # Confidence
         # ------------------------------------------------------
-
         if matched_hashes == 0:
-
             confidence = 0
-
         else:
-
-            confidence = (
-                best_votes /
-                matched_hashes
-            ) * 100
+            confidence = (best_votes / matched_hashes) * 100
 
         # ------------------------------------------------------
         # Return results
         # ------------------------------------------------------
-
         return {
-
             "song": best_song,
-
             "votes": best_votes,
-
             "confidence": confidence,
-
             "matched_hashes": matched_hashes,
-
             "query_hashes": len(query_fingerprints),
-
             "histogram": best_histogram,
-
             "top_matches": top_matches
-
         }
-          # ==========================================================
+
+    # ==========================================================
     # Plot Offset Histogram
     # ==========================================================
 
@@ -215,17 +155,11 @@ print(f"{len(query_fingerprints)} fingerprints generated.\n")
         histogram : Counter
             Histogram returned by identify().
         """
-
-        import matplotlib.pyplot as plt
-
         if histogram is None or len(histogram) == 0:
-
             print("No histogram available.")
-
             return
 
-        plt.figure(figsize=(12,5))
-
+        plt.figure(figsize=(12, 5))
         plt.bar(
             histogram.keys(),
             histogram.values(),
@@ -233,19 +167,12 @@ print(f"{len(query_fingerprints)} fingerprints generated.\n")
             color="steelblue",
             edgecolor="black"
         )
-
         plt.title("Offset Histogram")
-
         plt.xlabel("Offset Difference")
-
         plt.ylabel("Votes")
-
         plt.grid(alpha=0.3)
-
         plt.tight_layout()
-
         plt.show()
-
 
     # ==========================================================
     # Print Recognition Results
@@ -260,37 +187,23 @@ print(f"{len(query_fingerprints)} fingerprints generated.\n")
         result : dict
             Output from identify().
         """
-
         print("\n===================================")
         print("      AUDIO RECOGNITION RESULT")
         print("===================================\n")
 
         if result["song"] is None:
-
             print("No matching song found.")
-
             print("\n===================================\n")
-
             return
 
         print(f"Predicted Song     : {result['song']}")
-
         print(f"Matching Votes     : {result['votes']}")
-
         print(f"Confidence         : {result['confidence']:.2f}%")
-
-        print(
-            f"Matched Hashes     : "
-            f"{result['matched_hashes']} / "
-            f"{result['query_hashes']}"
-        )
+        print(f"Matched Hashes     : {result['matched_hashes']} / {result['query_hashes']}")
 
         print("\nTop Matches")
-
         print("-------------------------------")
-
         for i, (song, votes) in enumerate(result["top_matches"], 1):
-
             print(f"{i}. {song:<25} {votes}")
 
         print("\n===================================\n")
@@ -299,19 +212,13 @@ print(f"{len(query_fingerprints)} fingerprints generated.\n")
 # ==============================================================
 # Standalone Test
 # ==============================================================
-
 if __name__ == "__main__":
-
     DATABASE_PATH = "data/fingerprints.pkl"
-
     QUERY_FILE = "data/queries/query.mp3"
 
     matcher = SongMatcher()
-
     matcher.load_database(DATABASE_PATH)
-
+    
     result = matcher.identify(QUERY_FILE)
-
     matcher.print_results(result)
-
     matcher.plot_histogram(result["histogram"])
