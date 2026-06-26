@@ -1,133 +1,169 @@
 import os
 import tempfile
+import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 
 from matcher import SongMatcher
+from fingerprint import generate_fingerprints
 
 # ==========================================================
-# Page Configuration
+# Application Global Setup
 # ==========================================================
 st.set_page_config(
-    page_title="Audio Fingerprinting",
+    page_title="Audio Fingerprinting System",
     page_icon="🎵",
     layout="wide"
 )
 
-st.title("🎵 Audio Fingerprinting using DSP")
-st.write(
-    "Upload a short MP3 clip and identify the matching song "
-    "using audio fingerprinting."
-)
-
+st.title("🎵 Audio Fingerprinting Recognition Platform")
+st.write("EE200 Project Q3 Engine — Compute intermediate structural steps or evaluate massive batches.")
 st.divider()
 
-# ==========================================================
-# Load Database (Only Once)
-# ==========================================================
+# Cache the database load operation so the workspace stays snappy
 @st.cache_resource
-def load_matcher():
+def load_cached_matcher():
     matcher = SongMatcher()
     matcher.load_database("data/fingerprints.pkl")
     return matcher
 
-matcher = load_matcher()
+try:
+    matcher = load_cached_matcher()
+except Exception as e:
+    st.error("Could not find database pickle file at 'data/fingerprints.pkl'. Please ensure it runs within your root folder workspace context.")
+    st.stop()
+
+# Mode Toggles
+mode = st.sidebar.radio("Navigation Modes", ["Single-Clip Mode", "Batch Mode"])
 
 # ==========================================================
-# Upload Section
+# Mode A: Single-Clip Pipeline Visualization
 # ==========================================================
-uploaded_file = st.file_uploader(
-    "Upload an MP3 File",
-    type=["mp3"]
-)
+if mode == "Single-Clip Mode":
+    st.header("Single-Clip Analysis Window")
+    uploaded_file = st.file_uploader("Ingest individual target audio file", type=["mp3", "wav"])
 
-# ==========================================================
-# Recognition & UI Logic
-# ==========================================================
-if uploaded_file is not None:
-    # Use st.session_state to persist results across interface interactions (like toggling checkboxes)
-    if "recognition_result" not in st.session_state:
-        st.session_state.recognition_result = None
-
-    st.success("Audio uploaded successfully.")
-    
-    if st.button("Recognize Song", type="primary"):
-        with st.spinner("Generating fingerprints..."):
-            # Safe temporary file handling with explicit block containment
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp:
+    if uploaded_file is not None:
+        st.success("Audio data successfully staged.")
+        
+        if st.button("Execute Identification Process", type="primary"):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as temp:
                 temp.write(uploaded_file.read())
                 temp_path = temp.name
 
             try:
-                # Perform DSP calculation
-                st.session_state.recognition_result = matcher.identify(
-                    query_path=temp_path
-                )
+                with st.spinner("Extracting parameters and running DSP pipeline..."):
+                    # Extract footprints with full debug context arrays for visualization
+                    fingerprints, debug = generate_fingerprints(audio_path=temp_path, return_debug=True)
+                    result = matcher.identify(audio=debug["audio"], sample_rate=debug["sample_rate"])
+                
+                st.success("Processing Complete!")
+                st.divider()
+
+                # Metrics Layout Row
+                m_col1, m_col2, m_col3 = st.columns(3)
+                m_col1.metric("Predicted Target Song", str(result["song"]))
+                m_col2.metric("Matching Core Confidence", f"{result['confidence']:.2f}%")
+                m_col3.metric("Peak Histogram Votes", int(result["votes"]))
+                st.divider()
+
+                # Mandatory Intermediate Visualizations
+                st.subheader("Intermediate DSP Step Extractions")
+                plot_col1, plot_col2 = st.columns(2)
+
+                with plot_col1:
+                    st.write("**1. Spectrogram & Extracted Peak Constellation**")
+                    fig1, ax1 = plt.subplots(figsize=(10, 5))
+                    im = ax1.pcolormesh(
+                        debug["times"], 
+                        debug["frequencies"], 
+                        debug["spectrogram"], 
+                        shading="gouraud", 
+                        cmap="magma"
+                    )
+                    ax1.scatter(
+                        debug["times"][debug["time_indices"]],
+                        debug["frequencies"][debug["frequency_indices"]],
+                        color="cyan", s=10, edgecolors="black", linewidths=0.5, label="Sparse Maxima"
+                    )
+                    ax1.set_ylim(0, 5000)
+                    ax1.set_xlabel("Time (s)")
+                    ax1.set_ylabel("Frequency (Hz)")
+                    ax1.legend()
+                    fig1.colorbar(im, ax=ax1, label="Power Density (dB)")
+                    st.pyplot(fig1)
+
+                with plot_col2:
+                    st.write("**2. Temporal Alignment Offset Histogram**")
+                    if result["histogram"]:
+                        fig2, ax2 = plt.subplots(figsize=(10, 5))
+                        ax2.bar(
+                            list(result["histogram"].keys()), 
+                            list(result["histogram"].values()), 
+                            width=1.0, color="steelblue"
+                        )
+                        ax2.set_title(f"Target Sync Alignment: {result['song']}")
+                        ax2.set_xlabel("Offset Bins Delta")
+                        ax2.set_ylabel("Accumulated Match Count")
+                        ax2.grid(True, linestyle="--", alpha=0.5)
+                        st.pyplot(fig2)
+                    else:
+                        st.warning("No offset mapping histogram available for display.")
+
             finally:
-                # Clean up disk space immediately after identification is done
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
-        st.success("Recognition Complete!")
+# ==========================================================
+# Mode B: Automatic Batch Evaluation Mode
+# ==========================================================
+else:
+    st.header("Automated Batch Evaluation Mode")
+    st.write("Upload multiple query audio clips. The app will generate the exact evaluation standard `results.csv` file.")
+    
+    uploaded_files = st.file_uploader(
+        "Select batch folder files to ingest simultaneously", 
+        type=["mp3", "wav"], 
+        accept_multiple_files=True
+    )
 
-    # Render results if they exist in session state
-    if st.session_state.recognition_result is not None:
-        result = st.session_state.recognition_result
-        st.divider()
-
-        # ------------------------------------------
-        # Metrics Display
-        # ------------------------------------------
-        col1, col2, col3 = st.columns(3)
+    if uploaded_files:
+        st.info(f"Staged {len(uploaded_files)} files for evaluation.")
         
-        col1.metric(
-            "Predicted Song",
-            result["song"] if result["song"] is not None else "Not Found"
-        )
-        col2.metric(
-            "Confidence",
-            f"{result['confidence']:.2f}%"
-        )
-        col3.metric(
-            "Votes",
-            result["votes"]
-        )
+        if st.button("Run Batch Processing Pipeline", type="primary"):
+            results_registry = []
+            progress_bar = st.progress(0)
+            
+            for index, uploaded_file in enumerate(uploaded_files):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as temp:
+                    temp.write(uploaded_file.read())
+                    temp_path = temp.name
 
-        st.divider()
-
-        # ------------------------------------------
-        # Top Matches Side-by-Side with Visuals
-        # ------------------------------------------
-        match_col, hist_col = st.columns([1, 1])
-
-        with match_col:
-            st.subheader("Top Matches")
-            if result["top_matches"]:
-                for rank, (song, votes) in enumerate(result["top_matches"], start=1):
-                    st.write(f"**{rank}. {song}** — `{votes} votes`")
-            else:
-                st.warning("No matches found.")
-
-        with hist_col:
-            st.subheader("Alignment Visualizer")
-            if st.checkbox("Show Offset Histogram", value=True):
-                histogram = result["histogram"]
-                
-                if histogram:
-                    # Explicitly use standard styling elements to fit light/dark themes cleanly
-                    fig, ax = plt.subplots(figsize=(10, 4.5))
-                    ax.bar(
-                        list(histogram.keys()),
-                        list(histogram.values()),
-                        width=1.0,
-                        color="deepskyblue",
-                        edgecolor="none"
-                    )
-                    ax.set_title("Offset Histogram (Time Alignment Peak)")
-                    ax.set_xlabel("Offset Difference (Bins)")
-                    ax.set_ylabel("Votes")
-                    ax.grid(True, linestyle="--", alpha=0.5)
+                try:
+                    result = matcher.identify(query_path=temp_path)
+                    prediction_output = result["song"] if result["song"] is not None else "Unknown"
                     
-                    st.pyplot(fig)
-                else:
-                    st.warning("No histogram data generated.")
+                    # Maintain strict dictionary constraints matching evaluation specifications
+                    results_registry.append({
+                        "filename": uploaded_file.name,
+                        "prediction": prediction_output
+                    })
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                
+                progress_bar.progress((index + 1) / len(uploaded_files))
+            
+            # Format cleanly as a pandas table
+            df_outputs = pd.DataFrame(results_registry)
+            st.subheader("Computed Prediction Log Matrix")
+            st.dataframe(df_outputs, use_container_width=True)
+            
+            # Formulate structural bytes to ship down instantly
+            csv_bytes = df_outputs.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Download results.csv",
+                data=csv_bytes,
+                file_name="results.csv",
+                mime="text/csv"
+            )
