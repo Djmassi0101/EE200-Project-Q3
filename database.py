@@ -53,7 +53,7 @@ class FingerprintDatabase:
 
             for file in files
 
-            if file.lower().endswith(SUPPORTED_EXTENSIONS):
+            if file.lower().endswith(SUPPORTED_EXTENSIONS)
 
         ]
 
