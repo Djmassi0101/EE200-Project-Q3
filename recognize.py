@@ -1,20 +1,3 @@
-"""
-recognize.py
-============
-
-Command-line interface for recognizing a song.
-
-Usage
------
-python recognize.py
-
-The script loads the fingerprint database, asks the user
-for a query MP3 file, performs recognition, and displays
-the result.
-
-Author: <Your Name>
-"""
-
 import os
 
 from matcher import SongMatcher
