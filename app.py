@@ -1,20 +1,3 @@
-"""
-app.py
-======
-
-Streamlit application for the Audio Fingerprinting project.
-
-Features
---------
-1. Upload an MP3 file
-2. Identify the song
-3. Display confidence score
-4. Show top matches
-5. Plot offset histogram
-
-Author: <Your Name>
-"""
-
 import os
 import tempfile
 
