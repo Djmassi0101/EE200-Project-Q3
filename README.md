@@ -1,16 +1,16 @@
-# 🎵 EE200 Project: Audio Fingerprinting & Recognition Engine
+#  EE200 Project: Audio Fingerprinting & Recognition Engine
 
 A robust, production-grade automated audio identification platform inspired by the industrial Shazam landmarking algorithm. This system handles discrete Short-Time Fourier Transform (STFT) spectrogram analyses, processes sparse peak constellation mappings, and performs temporal synchronization voting. It features an interactive, web-accessible interface built with Streamlit and optimized for cloud execution environments.
 
 ---
 
-## 🚀 Live Platform Links
+##  Live Platform Links
 * **Live Web Application URL:** `https://<YOUR-APP-NAME>.streamlit.app/`
 * **Production Source Code Repository:** `https://github.com/Djmassi0101/EE200-Project-Q3`
 
 ---
 
-## 🛠️ System Architecture & Pipeline
+##  System Architecture & Pipeline
 
 The recognition framework processes target query audio through an identical pipeline to the reference library:
 
@@ -22,7 +22,7 @@ The recognition framework processes target query audio through an identical pipe
 
 ---
 
-## 📂 Project Repository Tree
+##  Project Repository Tree
 
 ```text
 EE200-Project-Q3/
