@@ -13,7 +13,7 @@ def build_production_database():
     # Clean out any old index versions if they exist
     if os.path.exists(output_path):
         os.remove(output_path)
-        print("🗑️ Removed old database index.")
+        print("Removed old database index.")
         
     database_dict = defaultdict(list)
     supported_formats = (".mp3", ".wav", ".m4a", ".flac")
@@ -21,13 +21,13 @@ def build_production_database():
     # Ensure the source directory exists
     if not os.path.exists(library_dir):
         os.makedirs(library_dir)
-        print(f"📁 Created missing source folder at '{library_dir}'. Please add your tracks.")
+        print(f"Created missing source folder at '{library_dir}'. Please add your tracks.")
         return
     
     audio_files = [f for f in os.listdir(library_dir) if f.lower().endswith(supported_formats)]
     
     if not audio_files:
-        print(f"❌ ERROR: No reference tracks found in '{library_dir}'.")
+        print(f"ERROR: No reference tracks found in '{library_dir}'.")
         return
 
     print(f"Indexing reference library: Compiling {len(audio_files)} tracks...")
@@ -44,7 +44,7 @@ def build_production_database():
                 # CRITICAL: Force cast the offset to a native standard Python int
                 database_dict[fingerprint_hash].append((song_name, int(anchor_time)))
         except Exception as e:
-            print(f"\n⚠️ Skipping track '{filename}' due to execution error: {e}")
+            print(f"\nSkipping track '{filename}' due to execution error: {e}")
             continue
 
     # Ensure output directory exists
@@ -56,7 +56,7 @@ def build_production_database():
     with open(output_path, "wb") as f:
         pickle.dump(dict(database_dict), f, protocol=pickle.HIGHEST_PROTOCOL)
         
-    print(f"\n✅ Production index cleanly built at: {output_path}")
+    print(f"\nProduction index cleanly built at: {output_path}")
 
 if __name__ == "__main__":
     build_production_database()
