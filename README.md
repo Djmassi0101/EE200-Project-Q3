@@ -5,7 +5,7 @@ A robust, production-grade automated audio identification platform inspired by t
 ---
 
 ##  Live Platform Links
-* **Live Web Application URL:** `https://<YOUR-APP-NAME>.streamlit.app/`
+* **Live Web Application URL:** `https://ee200-project-song-identifier.streamlit.app/`
 * **Production Source Code Repository:** `https://github.com/Djmassi0101/EE200-Project-Q3`
 
 ---
